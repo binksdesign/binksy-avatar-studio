@@ -1,13 +1,15 @@
-# Avatar Norbert × Binks — notes de développement
+# Binksy Avatar — notes de développement
 
-Recréation + extension du générateur « OpenBot plush avatars » de Norbert Bodziony, pour Graphiste Binks.
+Générateur d'avatars d'agents (peluche, 3D, Flat SVG) pour Graphiste Binks — inspiré d'OpenBot (Norbert Bodziony).
 Aucun code ni asset d'OpenBot copié : tout est réécrit et procédural (formes, yeux, fourrure, accessoires).
+Anciennement « Avatar Norbert × Binks » : renommé le 2026-11-03 (fichier, titre, clés de sauvegarde, format des lots) avec migration automatique des données.
 
 ## Livrables
 | Fichier | Rôle |
 |---|---|
-| `Avatar-Norbert-Binks.html` | l'app complète, un seul fichier (817 Ko, 240 Ko gzip), hors ligne, marche en `file://` (three.js, fflate, gifenc, muxers, Lucide intégrés) |
-| `avatar-bot.js` | composant `<avatar-bot>` autonome (35 Ko minifié, 14 Ko gzip) |
+| `Binksy-Avatar.html` | l'app complète, un seul fichier (≈ 930 Ko), hors ligne, marche en `file://` (three.js, fflate, gifenc, muxers, Lucide intégrés) |
+| `avatar-bot.js` | composant `<avatar-bot>` autonome (≈ 62 Ko minifié — embarque les 87 accessoires Flat pour le mode direct) |
+| `deploy/binksy-avatar/` + `binksy-avatar.zip` | site prêt à publier : `index.html` (= l'app), `composant/` (démo + pack), `README.md` |
 | `component-demo/` | `demo.html` + `avatar-bot.js` + `pack.js` (pack d'exemple exporté par l'app : 3 agents peluche × 3 états) |
 | `NOTES.md` | ce document |
 
@@ -17,37 +19,49 @@ Sources dans `src/`, composant dans `component/avatar-bot.src.js`, tests dans `t
 ## Architecture (`src/`)
 | Fichier | Rôle |
 |---|---|
-| `schema.js` | **source unique** : personnages, 11 formes, 17 expressions, 12 couleurs, 8 états, 5 transitions, 10 rendus + réglages, 25 accessoires, bouches, rôles/noms ; `validateConfig()` (strict, corrige et signale), `jsonSchema()`, `listOptions()`, aléatoire reproductible, `makeTeam()` |
+| `schema.js` | **source unique** : personnages, 11 formes, 17 expressions, 12 couleurs, 8 états, 5 transitions, 10 rendus + réglages, 87 accessoires en 6 catégories (couleur + accent + écusson texte), bouches, rôles/noms ; `validateConfig()` (strict, corrige et signale), `jsonSchema()`, `listOptions()`, aléatoire reproductible, `makeTeam()` |
 | `shapes.js` | champs de distance 2D des silhouettes (polygones arrondis, superellipse, nuage en union lisse…) → corps 3D « coussin » (dalle arrondie + bombé radial sans arêtes), lancer de rayons, ancres, contour SVG lissé |
 | `pose.js` | fonction **pure** pose(cfg, u) → yeux, corps (respiration, squash), extras (points, badge, z), bouche ; u ∈ [0,1[ → boucles parfaites ; utilisée par le 3D, le Flat et le composant |
 | `face.js` | yeux pilule / arc + paupières + bouche → primitives communes (shader 3D et SVG) |
 | `facegl.js` | patch du visage (triangles avant du maillage du corps, décalés) + shader : yeux blancs bombés et brillants (normale reconstruite depuis le champ de distance), ombre portée, bouche, joues ; mêmes uniformes pour masquer la fourrure autour des yeux |
 | `fur.js` | **peluche = shell texturing** (repris et adapté d'Avatar Studio v5, code Binks) : N coques instanciées, mèches par bruit cellulaire 3D, touffes, duvet, occlusion racine, pointes claires, lustre (sheen), alpha-to-coverage MSAA, composition « par-dessus » pour l'alpha d'export ; la fourrure s'écarte autour des yeux/bouche |
-| `materials.js` | styles : Lisse brillant, Mat, Verre/gelée (coque translucide + cœur lumineux), Argile (empreintes par bruit dans la normale), Chrome, Velours (sheen), Toon (dégradé à paliers + contour coque inversée), Vinyle ; dissolution injectée dans toutes les matières |
-| `accessories.js` | 25 accessoires 3D procéduraux posés sur les ancres de la forme (sommet, côtés, surface par lancer de rayons, visage), cumulables, colorables, x/y/z/échelle/rotation |
+| `materials.js` | matières d'accessoires par pièce (tricot côtelé, tissu, éponge, feutre, filet de trucker, plissé, cuir, bois, plastique satiné, céramique, bonbon, perle, métal, or, verre, verre teinté, fumée) avec motif procédural en normale + cavités ; styles du corps : Lisse brillant, Mat, Verre/gelée (coque translucide + cœur lumineux), Argile (empreintes par bruit dans la normale), Chrome, Velours (sheen), Toon (dégradé à paliers + contour coque inversée), Vinyle ; dissolution injectée dans toutes les matières |
+| `kit3d.js` | kit « 3D icon » : `shell()` coque épaisse qui **épouse la surface** de la forme dans une région (fonction signée), lèvres arrondies ; `brim()` visières/bords depuis la lèvre ; `ring()` courbe de surface coupée par un plan ; `sweep()` ruban à section arrondie ; `vtube()` tube à rayon variable ; `rlathe()/puck()/rbox()/rext()` révolutions et extrusions biseautées ; cache de géométries |
+| `accessories.js` | 87 accessoires 3D chunky multi-pièces (2–3 couleurs, matières par pièce), ajustés aux 11 formes ; zones couvertes déclarées (`cover`) pour masquer la fourrure ; animations `anim(u)` en boucle (fumée, cœurs, étoiles, pompon, larme, drapeau, cape…) |
+| `flatacc.js` | les 87 accessoires en **Flat SVG** simplifié ; couvre-chefs, cagoule, capuche, gilet, bandeaux = silhouette de la forme élargie et découpée (épousent les 11 formes) |
 | `flat.js` | rendu **Flat 2D en vrai SVG** (corps, ombrage, contour, yeux, bouche, extras, accessoires 2D) |
 | `engine.js` | three.js r170 : icosphère projetée sur chaque forme (**même topologie** → morphing « warp » direct), transitions flip/pop/warp/dissolve/cut, vie (regard, clignements, respiration), 2 renderers (aperçu + hors écran pour vignettes, lignes « Dans l'app » et exports), cadrage auto (accessoires, points de réflexion) |
 | `exporters.js` | PNG, JPEG, SVG, GIF (gifenc), WebP animé, APNG, MP4/WebM (WebCodecs), WebM **alpha** (2ᵉ encodeur VP9 sur l'alpha, webm-muxer patché), planches de sprites + JSON Phaser + CSS, pack d'icônes + favicon.ico, lots ZIP + manifest, pack composant |
 | `ai.js` | OpenRouter (modèles, chat JSON, erreurs claires, nouvel essai si JSON invalide, validation par le schéma) ; logo/photo → avatar (vision) ; repli local : palette k-moyennes + forme devinée |
 | `webmcp.js` | WebMCP (`document.modelContext.registerTool`, repli `navigator.modelContext` / `provideContext`), détection de fonction |
 | `audio.js` | état « Parle » : niveau RMS du micro ou d'un fichier audio |
-| `store.js` | sauvegarde IndexedDB (repli localStorage) |
+| `store.js` | sauvegarde IndexedDB `binksy-avatar` (repli localStorage) + `migrateLegacy()` : copie l'ancienne base `avatar-norbert-binks` et `avatar-norbert-binks:backup` si la nouvelle est vide |
 | `app.js` | interface (onglets Avatar · Rendu · Accessoires · Équipe · IA · Export), historique, sauvegarde auto, lien, JSON, presets, `window.avatarAPI` |
 
 ## Fonctionnalités (comptes)
 - 6 personnages (Nexo, Vita, Cloe, Malu, Yoshi, Fred), 11 formes, 17 expressions (« Visage du perso » compris), 12 pastilles + couleur libre + palette de marque, 8 états animés (Repos, Clin d'œil, Yeux grands, Réfléchit, Notification, Dort, Échec, Parle), 5 transitions, taille des yeux, couleur des yeux, bouche optionnelle (8 styles + auto).
 - 10 rendus (Peluche, Lisse brillant, Mat, Verre/gelée, Argile, Chrome, Velours, Toon, Vinyle, Flat SVG) avec leurs réglages (24 curseurs au total).
-- 25 accessoires. Mode équipe 2–8 agents. Aléatoire (reproductible par graine). Mes avatars (presets). Annuler/rétablir (150 niveaux, Ctrl/Cmd+Z, Ctrl+Maj+Z).
+- 87 accessoires (voir catalogue ci-dessous). Mode équipe 2–8 agents. Aléatoire (reproductible par graine). Mes avatars (presets). Annuler/rétablir (150 niveaux, Ctrl/Cmd+Z, Ctrl+Maj+Z).
 - Vignettes du panneau rendues par le vrai moteur (style courant).
 - « Dans l'app — survole une ligne » : lignes à 24 / 32 / 40 px, animées au survol, case « toujours animer » ; avec une équipe, ce sont ses agents.
 - 12 types d'export : PNG, JPEG, SVG, GIF, WebP, APNG, MP4, WebM, Sprites, Icônes, Lot ZIP, Pack composant.
+
+## Accessoires (87, style « 3D icon / argile »)
+Volumes épais, biseaux ronds, 2–3 couleurs (principale + accent + teinte sombre dérivée), matières par pièce. Chaque accessoire : couleur + accent, 5 curseurs (x, y, profondeur, taille, rotation), ajusté aux 11 formes, compatible avec les 10 rendus (Flat = version 2D), animé avec les états (respiration, rebond, regard).
+- **Chapeaux (24)** : cap (visière courbe, coutures, bouton, dessous contrasté), snapback (visière plate, panneau avant structuré, attache arrière), trucker (avant mousse + filet arrière, écusson), cap_back (à l'envers, attache devant), bucket (bob, tissu souple, bord incliné), bucket_duo (bob bicolore, bande + écusson), beanie, pompom, beret, chef, cowboy, sombrero, tophat, party, wizard, crown, pirate (tricorne + tête de mort), propeller, hardhat, moto (visière teintée), viking, flowercrown, hood (capuche + cordons), balaclava (cagoule, ouverture des yeux).
+- **Tête & oreilles (17)** : headphones (arceau épais, curseurs, coussins marine), headset (micro + LED), airpods, earrings, bearears, bunnyears, catears, horns, halo, antenna, leaf, bow, flower, starclip, ninja (plaque + nœud), sportband, bandana.
+- **Visage (16)** : glasses, sunglasses, aviators, vr, skimask, monocle, eyepatch, surgical, facebandana, mustache, handlebar, beard, bandage, tear (animée), sweat, clownnose.
+- **Bouche (8)** : cigarette (braise + fumée animée), cigar, pipe, lollipop, straw (brin de paille), bubblegum (bulle qui gonfle), pacifier, fangs.
+- **Cou & corps (11)** : bowtie, tie, goldchain, pearls, spikecollar, scarf (tricot qui épouse la forme + pans), cape (ondule), backpack, vest (gilet pare-balles : poches, sangles, écusson vierge ou texte court), badge, medal.
+- **Fun / props (11)** : hearts, dizzy, thought, balloon, coffee (vapeur), laptop, magnifier, wrench, flag (texte possible), lightbulb, trophy.
+Écusson texte (`text`, 10 caractères) : cap, snapback, trucker, cap_back, bucket, bucket_duo, vest, flag. Couvrants (fourrure masquée sauf la fenêtre du visage, les autres accessoires passent par-dessus) : balaclava, hood, moto. Chapeaux, bandeaux, écharpe, gilet et masques masquent la fourrure dans leur zone.
 
 ## Configuration JSON (schéma)
 `window.avatarAPI.schema()` ou Réglages → « Copier le schéma JSON ». Exemple :
 ```json
 { "v": 1, "name": "Juri", "character": null, "shape": "pentagon", "color": "#1e2a78", "expression": "proud", "state": "idle",
   "transition": "pop", "eyeSize": 1.1, "eyeColor": "#f6f2ea", "render": { "style": "plush", "p": { "length": 0.08, "density": 1.15 } },
-  "accessories": [{ "type": "glasses", "color": "#f5c542", "x": 0, "y": 0, "z": 0, "scale": 1, "rot": 0 }], "mouth": { "on": true, "style": "smile", "color": "#2a161b" } }
+  "accessories": [{ "type": "snapback", "color": "#22232b", "accent": "#ff8a3d", "text": "BINKS", "x": 0, "y": 0, "z": 0, "scale": 1, "rot": 0 }], "mouth": { "on": true, "style": "smile", "color": "#2a161b" } }
 ```
 Validation : valeurs hors bornes ramenées, synonymes FR/EN acceptés (« rond », « fluffy », « joyeux »…), champs inconnus ignorés, chaque correction renvoyée dans `warnings`.
 
@@ -63,7 +77,7 @@ Clé saisie dans Réglages, stockée en IndexedDB sur l'appareil, jamais dans le
 `#a=` + JSON compressé (zlib, fflate) en base64url (~370 caractères). Chargé au démarrage et sur `hashchange` (annulable).
 
 ## Sauvegarde automatique (règle permanente)
-Tout est enregistré en IndexedDB (`avatar-norbert-binks` / `kv` / `state`) 220 ms après chaque changement, et à `pagehide` / onglet masqué : avatar, équipe (agents, noms, rôles, agent actif), presets, réglages (clé API, modèle, regard, toujours animer, palette de marque, onglet, pause), réglages d'export (format, taille, i/s, transparence, fond, lot), prompt IA et variantes, accessoire sélectionné. Testé : rechargement → état identique (comparaison JSON stricte).
+Tout est enregistré en IndexedDB (`binksy-avatar` / `kv` / `state`, copie de secours `localStorage['binksy-avatar:backup']`) 220 ms après chaque changement, et à `pagehide` / onglet masqué : avatar, équipe (agents, noms, rôles, agent actif), presets, réglages (clé API, modèle, regard, toujours animer, palette de marque, onglet, pause), réglages d'export (format, taille, i/s, transparence, fond, lot), prompt IA et variantes, accessoire sélectionné, catégorie d'accessoires ouverte. **Migration** : au premier lancement, si `binksy-avatar` est vide et que l'ancienne base `avatar-norbert-binks` (ou `avatar-norbert-binks:backup`) existe, tout est copié (l'ancienne base est conservée). Testé : rechargement → état identique (comparaison JSON stricte).
 
 ## Composant `<avatar-bot>`
 ```html
@@ -76,7 +90,7 @@ Tout est enregistré en IndexedDB (`avatar-norbert-binks` / `kv` / `state`) 220 
 - Mode direct optionnel `live` (+ `follow`) : même dessin en SVG vectoriel, calculé en temps réel (expressions et états dynamiques via `setExpression`, `setState`).
 
 ## Format des lots (`manifest.json`)
-`format: avatar-norbert-pack`, `states` (clés anglaises : idle, wink, wide_eyes, thinking, notification, asleep, failed, speaking + durée de boucle), `agents`, et par fichier : chemin `agent/état/expression.ext`, état, expression, format, mime, taille, animé, boucle, durée, i/s, images, transparent, planche (cols/rows), octets.
+`format: binksy-avatar-pack` (l'import JSON accepte aussi l'ancien `avatar-norbert-pack`), `generator: Binksy Avatar`, `agents[].config` (configuration complète, réimportable en équipe), `states` (clés anglaises : idle, wink, wide_eyes, thinking, notification, asleep, failed, speaking + durée de boucle), `agents`, et par fichier : chemin `agent/état/expression.ext`, état, expression, format, mime, taille, animé, boucle, durée, i/s, images, transparent, planche (cols/rows), octets.
 
 ## Open source (licences)
 | Projet | Licence | Usage |
@@ -96,9 +110,17 @@ UPNG.js n'a pas été nécessaire (APNG assemblé à partir des PNG du navigateu
 - `t3.py` fonctionnel : WebMCP simulé (9 outils enregistrés, appels réels), OpenRouter simulé (route Playwright : modèles, génération simple/équipe/variantes, erreur 401, sans clé), lien `#a=`, annuler/rétablir, **sauvegarde auto + rechargement** (égalité stricte), chargement par lien.
 - `t4.py` exports réels validés par `ffprobe` / PIL / zip (voir résultats ci-dessous).
 - `t5.py` composant : démo à 24/32/40 px, `setState`, mode direct, `file://`.
-- `t6.py` app en `file://` (aucune requête réseau, aucune erreur, Flat + export SVG, rechargement) · `t7.py` transitions (planche) · `t8.py` équipe + lignes « Dans l'app » · `t9.py` rechargement immédiat (copie de secours).
+- `t6.py` app en `file://` (aucune requête réseau, aucune erreur, Flat + export SVG, rechargement) · `t7.py` transitions (planche) · `t8.py` équipe + lignes « Dans l'app » · `t9.py` rechargement immédiat (copie de secours) · `t10.py` **migration** depuis l'ancienne base / l'ancienne copie de secours (sans écraser une nouvelle base existante) · `t11.py` onglet Accessoires (catégories, accent, écusson) + rechargement + lien.
+- `accs.py` / `allsheet.py` planches d'accessoires (style, formes) → `shots/sheet-acc-*.png` ; `styles.sh` planche des 7 autres rendus (`shots/sheet-accessories-styles.png`).
 
-## Résultats (2026-11-02/03, build final)
+## Résultats — Binksy Avatar (2026-11-03)
+- 87 accessoires rendus sans erreur sur peluche (triangle), lisse brillant (cercle, goutte, carré) et Flat SVG (cercle, triangle) ; 12 accessoires représentatifs sur les 7 autres rendus (hexagone) → `shots/sheet-acc-*.png`, `shots/sheet-accessories-styles.png`. SVG Flat des 87 × 3 formes validés par un analyseur XML (0 erreur, aucun NaN).
+- Fourrure masquée sous chapeaux, capuche, cagoule, casque moto, bandeaux, écharpe, gilet, masques (zones `cover` → shader de la fourrure).
+- Migration (`t10.py`) : ancienne base IndexedDB → nouvelle (2 clés copiées), copie de secours localStorage seule → reprise, nouvelle base existante → jamais écrasée, ancienne base jamais créée si absente ; rechargement après modification → nouvelle base.
+- `t11.py` : 6 catégories, accent + écusson modifiés dans l'UI, rechargement → identiques, lien `#a=` (≈ 425 caractères) → identiques, aucune erreur console.
+- `t3.py` (WebMCP 9 outils, `list_options` → 87 accessoires + catégories, IA simulée, lien, annuler, sauvegarde auto **égalité stricte**), `t9.py` (rechargement immédiat), `t5.py` (composant), `t6.py` (`file://`, aucune requête réseau, aucune erreur) : OK. Exports (`t4.py`) : PNG RGBA, SVG Flat avec écussons « BINKS »/« PRESS », GIF 36 images, WebM VP9 alpha, APNG RGBA, lot ZIP `binksy-avatar-pack` avec `agents[].config`.
+
+## Résultats (2026-11-02/03, version précédente)
 - 11 formes × 10 rendus = 110 combinaisons rendues sans erreur → `shots/sheet-shapes-x-renders.png`. 17 expressions, 8 états, 25 accessoires, 5 transitions rendus sans erreur (`shots/d_expr.png`, `shots/sheet-accessories.png`, `shots/sheet-transitions.png`).
 - WebMCP simulé : 9 outils enregistrés via `registerTool`, appels réels OK (set_state, set_expression, add_accessory + erreur propre pour un type inconnu, list_options, set_avatar avec corrections signalées, randomize reproductible par graine, export_avatar → data URL PNG, get_avatar).
 - OpenRouter simulé : sans clé → message clair ; simple (JSON entre balises ``` + accessoire inconnu ignoré et signalé), équipe de 3 (noms + rôles), 4 variantes, 401 → « Clé API refusée », en-tête `Authorization: Bearer`, `response_format` envoyé.
@@ -114,4 +136,10 @@ UPNG.js n'a pas été nécessaire (APNG assemblé à partir des PNG du navigateu
 - Tout a été mesuré en rendu logiciel (SwiftShader) : performance réelle sur GPU non mesurée ici. Exports de peluche lents en logiciel (≈ 0,3–1 s/image).
 - WebMCP n'est exposé par aucun navigateur stable à ce jour : testé avec un `document.modelContext` simulé.
 - OpenRouter testé avec des réponses simulées (pas de clé réelle dans le bac à sable).
-- Accessoires génériques : sur certaines formes (triangle, goutte) les chapeaux suivent l'ancre du sommet mais peuvent demander un réglage manuel (curseurs position/taille).
+- Chapeaux sur formes pointues (triangle, goutte, diamant) : la coque épouse la pointe — casquettes et bonnets deviennent « pointus » (choix assumé : ils collent à la forme) ; chapeaux rigides (haut-de-forme, fête, magicien, couronne, sombrero) se posent à la hauteur où la forme a la bonne largeur.
+- Vue de face à hauteur des yeux : une visière se lit comme un bord étroit ; le dessous contrasté aide, une vue légèrement plongeante n'est pas proposée.
+- Gilet, cravate, colliers sur formes aux yeux bas (triangle, goutte) : peu de place sous la bouche, ces accessoires sont plus courts.
+- Accessoires « couvrants » + autres accessoires : décalage fixe (0,11) pour passer par-dessus ; un réglage manuel peut être utile pour des combinaisons serrées (ex. casque audio sur capuche).
+- Les zones de fourrure masquée suivent la position verticale de l'accessoire mais pas un grand décalage horizontal / une petite échelle (dans ce cas la fourrure n'est plus masquée).
+- Fumée, cœurs, larme… : animés en 3D et en Flat (images clés de la boucle), pas dans le composant en sprites au-delà des états exportés.
+- Composant : 62 Ko au lieu de 35 Ko (les 87 accessoires Flat sont embarqués pour le mode direct).
