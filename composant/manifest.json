@@ -1,0 +1,200 @@
+{
+  "name": "equipe",
+  "size": 80,
+  "fps": 20,
+  "agents": {
+    "nexo": {
+      "name": "Nexo",
+      "role": "Research agent",
+      "config": {
+        "v": 1,
+        "name": "Nexo",
+        "character": "nexo",
+        "shape": "squircle",
+        "color": null,
+        "expression": "own",
+        "state": "idle",
+        "transition": "pop",
+        "eyeSize": 1,
+        "eyeColor": "#f6f2ea",
+        "render": {
+          "style": "plush",
+          "p": {
+            "length": 0.08,
+            "density": 1.15,
+            "softness": 0.6,
+            "tips": 0.15,
+            "sheen": 0.6,
+            "clump": 0.12
+          }
+        },
+        "accessories": [],
+        "mouth": {
+          "on": false,
+          "style": "auto",
+          "color": "#2a161b"
+        },
+        "role": "Research agent"
+      },
+      "states": {
+        "idle": {
+          "sheet": "sprites/nexo/idle.webp",
+          "cols": 9,
+          "rows": 9,
+          "frames": 80,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "thinking": {
+          "sheet": "sprites/nexo/thinking.webp",
+          "cols": 6,
+          "rows": 6,
+          "frames": 36,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "notification": {
+          "sheet": "sprites/nexo/notification.webp",
+          "cols": 7,
+          "rows": 6,
+          "frames": 40,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        }
+      }
+    },
+    "vita": {
+      "name": "Vita",
+      "role": "Code reviewer",
+      "config": {
+        "v": 1,
+        "name": "Vita",
+        "character": "vita",
+        "shape": "circle",
+        "color": null,
+        "expression": "own",
+        "state": "idle",
+        "transition": "pop",
+        "eyeSize": 1,
+        "eyeColor": "#f6f2ea",
+        "render": {
+          "style": "plush",
+          "p": {
+            "length": 0.08,
+            "density": 1.15,
+            "softness": 0.6,
+            "tips": 0.15,
+            "sheen": 0.6,
+            "clump": 0.12
+          }
+        },
+        "accessories": [],
+        "mouth": {
+          "on": false,
+          "style": "auto",
+          "color": "#2a161b"
+        },
+        "role": "Code reviewer"
+      },
+      "states": {
+        "idle": {
+          "sheet": "sprites/vita/idle.webp",
+          "cols": 9,
+          "rows": 9,
+          "frames": 80,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "thinking": {
+          "sheet": "sprites/vita/thinking.webp",
+          "cols": 6,
+          "rows": 6,
+          "frames": 36,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "notification": {
+          "sheet": "sprites/vita/notification.webp",
+          "cols": 7,
+          "rows": 6,
+          "frames": 40,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        }
+      }
+    },
+    "malu": {
+      "name": "Malu",
+      "role": "Release bot",
+      "config": {
+        "v": 1,
+        "name": "Malu",
+        "character": "malu",
+        "shape": "circle",
+        "color": null,
+        "expression": "own",
+        "state": "idle",
+        "transition": "pop",
+        "eyeSize": 1,
+        "eyeColor": "#f6f2ea",
+        "render": {
+          "style": "plush",
+          "p": {
+            "length": 0.08,
+            "density": 1.15,
+            "softness": 0.6,
+            "tips": 0.15,
+            "sheen": 0.6,
+            "clump": 0.12
+          }
+        },
+        "accessories": [
+          {
+            "type": "crown"
+          }
+        ],
+        "mouth": {
+          "on": false,
+          "style": "auto",
+          "color": "#2a161b"
+        },
+        "role": "Release bot"
+      },
+      "states": {
+        "idle": {
+          "sheet": "sprites/malu/idle.webp",
+          "cols": 9,
+          "rows": 9,
+          "frames": 80,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "thinking": {
+          "sheet": "sprites/malu/thinking.webp",
+          "cols": 6,
+          "rows": 6,
+          "frames": 36,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        },
+        "notification": {
+          "sheet": "sprites/malu/notification.webp",
+          "cols": 7,
+          "rows": 6,
+          "frames": 40,
+          "fps": 20,
+          "w": 80,
+          "h": 80
+        }
+      }
+    }
+  }
+}

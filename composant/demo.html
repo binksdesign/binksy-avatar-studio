@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>&lt;avatar-bot&gt; — démo du composant</title>
+<script src="avatar-bot.js"></script>
+<script src="pack.js"></script>
+<style>
+  :root{color-scheme:dark}body{margin:0;background:#161616;color:#ededed;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",system-ui,sans-serif;padding:28px}
+  h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:28px 0 10px;color:#cfcfd4}p{color:#8b8b92;margin:0 0 12px;max-width:720px}
+  .box{background:#1c1c1e;border:1px solid #2c2c30;border-radius:14px;padding:12px 14px;max-width:440px}
+  .row{display:flex;align-items:center;gap:12px;padding:7px 6px;border-radius:9px}.row:hover{background:rgba(255,255,255,.04)}.row b{flex:1;font-weight:600;font-size:13px}.row span{color:#8b8b92;font-weight:400;margin-left:6px}.row small{color:#8b8b92;font-size:11px}
+  .av{width:40px;display:grid;place-items:center}
+  .btns{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.btns button{background:#232326;border:1px solid #3a3a40;color:#ddd;border-radius:99px;padding:6px 12px;cursor:pointer;font:inherit;font-size:12px}.btns button.on{background:#f2f2f2;color:#111}
+  .sizes{display:flex;align-items:flex-end;gap:22px;margin-top:8px}.sizes div{display:flex;flex-direction:column;align-items:center;gap:6px;color:#8b8b92;font-size:11px}
+  code{font:12px ui-monospace,Menlo,monospace;background:#232326;padding:2px 6px;border-radius:6px}
+  pre{background:#101011;border:1px solid #2c2c30;border-radius:10px;padding:12px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,monospace;max-width:720px}
+</style></head><body>
+<h1>&lt;avatar-bot&gt;</h1>
+<p>Composant léger (<b>≈ 35 Ko minifié, ≈ 12 Ko gzip</b>) qui joue les animations exportées depuis Avatar Norbert × Binks (pack « composant »). Fonctionne en <code>file://</code>, à 24 px, avec <code>setState()</code>.</p>
+<h2>Dans l’app — survole une ligne</h2>
+<div class="box" id="rows"></div>
+<h2>États (API <code>el.setState()</code>)</h2>
+<div class="btns" id="states"></div>
+<div class="sizes" id="sizes"></div>
+<h2>Mode direct (vectoriel, sans sprites) — <code>live</code>, <code>follow</code>, <code>setExpression()</code></h2>
+<div class="btns" id="exprs"></div>
+<div class="sizes" id="live"></div>
+<h2>Intégration</h2>
+<pre>&lt;script src="avatar-bot.js"&gt;&lt;/script&gt;
+&lt;script src="pack.js"&gt;&lt;/script&gt;
+&lt;avatar-bot pack="equipe" agent="nexo" state="idle" size="32" animate="hover"&gt;&lt;/avatar-bot&gt;
+
+document.querySelector('avatar-bot').setState('thinking');</pre>
+<script>
+const P = window.AvatarBotPacks && Object.values(window.AvatarBotPacks)[0]; const name = P.name, agents = Object.entries(P.agents);
+const sizes = [24, 32, 40];
+document.getElementById('rows').innerHTML = agents.map(([k, a], i) => `<div class="row"><div class="av"><avatar-bot pack="${name}" agent="${k}" state="idle" size="${sizes[i % 3]}" animate="hover"></avatar-bot></div><b>${a.name}<span>${a.role || ''}</span></b><small>${sizes[i % 3]} px</small></div>`).join('');
+document.querySelectorAll('.row').forEach(r => { const el = r.querySelector('avatar-bot'); r.onmouseenter = () => el.dispatchEvent(new PointerEvent('pointerenter')); r.onmouseleave = () => el.dispatchEvent(new PointerEvent('pointerleave')); });
+const st = Object.keys(agents[0][1].states);
+document.getElementById('sizes').innerHTML = agents.map(([k]) => sizes.map(s => `<div><avatar-bot class="sz" pack="${name}" agent="${k}" state="idle" size="${s}"></avatar-bot>${s}px</div>`).join('')).join('');
+document.getElementById('states').innerHTML = st.map((s, i) => `<button class="${i ? '' : 'on'}" data-s="${s}">${s}</button>`).join('');
+document.querySelectorAll('#states button').forEach(b => b.onclick = () => { document.querySelectorAll('#states button').forEach(x => x.classList.toggle('on', x === b)); document.querySelectorAll('avatar-bot.sz').forEach(el => el.setState(b.dataset.s)); });
+const ex = ['neutral', 'attentive', 'happy', 'surprised', 'angry', 'sad', 'sleepy'];
+document.getElementById('exprs').innerHTML = ex.map((e, i) => `<button class="${i === 1 ? 'on' : ''}" data-e="${e}">${e}</button>`).join('') + ['idle', 'thinking', 'notification', 'asleep', 'speaking'].map(s => `<button data-ls="${s}">${s}</button>`).join('');
+document.getElementById('live').innerHTML = agents.map(([k, a]) => sizes.concat([96]).map(s => `<div><avatar-bot class="lv" live follow expression="attentive" size="${s}" config='${JSON.stringify({ shape: a.config.shape, color: a.config.color || null, character: a.config.character, accessories: a.config.accessories }).replace(/'/g, '&#39;')}'></avatar-bot>${s}px</div>`).join('')).join('');
+document.querySelectorAll('#exprs button[data-e]').forEach(b => b.onclick = () => { document.querySelectorAll('#exprs button[data-e]').forEach(x => x.classList.toggle('on', x === b)); document.querySelectorAll('avatar-bot.lv').forEach(el => el.setExpression(b.dataset.e)); });
+document.querySelectorAll('#exprs button[data-ls]').forEach(b => b.onclick = () => document.querySelectorAll('avatar-bot.lv').forEach(el => el.setState(b.dataset.ls)));
+window.DEMO_READY = true;
+</script>
+</body></html>
